@@ -1,0 +1,76 @@
+/* Custom Styles for Movie Ticket Booking System */
+
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --dark-bg: #1a1a1a;
+    --card-hover-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* Navbar Enhancements */
+.navbar {
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--primary-color);
+    border: none;
+    transition: transform 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* Movie Cards */
+.movie-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.movie-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.movie-poster {
+    height: 350px;
+    object-fit: cover;
+}
+
+/* Footer Styling */
+footer {
+    border-top: 1px solid #444;
+}
+
+/* Utility Classes */
+.text-primary-custom {
+    color: var(--primary-color);
+}
+
+.bg-glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .movie-poster {
+        height: 250px;
+    }
+}
