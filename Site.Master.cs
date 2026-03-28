@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -17,26 +17,8 @@ namespace MovieTicketBooking
 
         private void ConfigureNavigation()
         {
-            // Default visibility
-            phGuest.Visible = true;
-            phUser.Visible = false;
-            phAdmin.Visible = false;
-
-            if (Session["UserId"] != null)
-            {
-                phGuest.Visible = false;
-                string role = Session["UserRole"] != null ? Session["UserRole"].ToString() : "User";
-                litUsername.Text = Session["Username"] != null ? Session["Username"].ToString() : "User";
-
-                if (role == "Admin")
-                {
-                    phAdmin.Visible = true;
-                }
-                else
-                {
-                    phUser.Visible = true;
-                }
-            }
+            // Navigation visibility is now handled completely inline with <% if %> blocks in Site.Master
+            // to bypass the ASP.NET WebForms HTML parser bug.
         }
     }
 }

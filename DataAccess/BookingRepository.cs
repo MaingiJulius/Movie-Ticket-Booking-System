@@ -60,9 +60,10 @@ namespace MovieTicketBooking.DataAccess
 
         public DataTable GetUserBookings(int userId)
         {
-            string query = @"SELECT B.BookingId, M.Title, S.TheaterName, S.StartTime, B.TotalAmount, B.Status, B.BookingDate,
+            string query = @"SELECT B.BookingId, U.FullName, M.Title, S.TheaterName, S.StartTime, B.TotalAmount, B.Status, B.BookingDate,
                              (SELECT STRING_AGG(SeatNumber, ', ') FROM BookingDetails WHERE BookingId = B.BookingId) as Seats
                              FROM Bookings B
+                             INNER JOIN Users U ON B.UserId = U.UserId
                              INNER JOIN Showtimes S ON B.ShowtimeId = S.ShowtimeId
                              INNER JOIN Movies M ON S.MovieId = M.MovieId
                              WHERE B.UserId = @uid

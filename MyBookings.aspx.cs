@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -52,7 +52,7 @@ namespace MovieTicketBooking
         protected string GetStatusClass(string status)
         {
             if (status == "Confirmed") return "badge bg-success";
-            if (status == "Cancelled") return "badge bg-danger";
+            if (status == "Canceled") return "badge bg-danger";
             return "badge bg-secondary";
         }
 

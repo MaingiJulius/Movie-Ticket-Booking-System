@@ -1,4 +1,4 @@
-﻿<%@ Page Title="My Bookings" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="MyBookings.aspx.cs" Inherits="MovieTicketBooking.MyBookings" %>
+<%@ Page Title="My Bookings" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="MyBookings.aspx.cs" Inherits="MovieTicketBooking.MyBookings" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
 </asp:Content>
@@ -11,7 +11,11 @@
     <asp:GridView ID="gvBookings" runat="server" AutoGenerateColumns="False" CssClass="table table-hover shadow-sm border-0" 
         OnRowCommand="gvBookings_RowCommand" OnRowDataBound="gvBookings_RowDataBound">
         <Columns>
-            <asp:BoundField DataField="BookingId" HeaderText="Booking #" />
+            <asp:TemplateField HeaderText="Booking #">
+                <ItemTemplate>
+                    <%# (int)Eval("BookingId") > 1000 ? (int)Eval("BookingId") - 1000 : Eval("BookingId") %>
+                </ItemTemplate>
+            </asp:TemplateField>
             <asp:BoundField DataField="Title" HeaderText="Movie" />
             <asp:TemplateField HeaderText="Date & Time">
                 <ItemTemplate>
@@ -31,11 +35,21 @@
             <asp:TemplateField HeaderText="Actions">
                 <ItemTemplate>
                     <asp:LinkButton ID="btnCancel" runat="server" CommandName="CancelBooking" 
-                        CommandArgument='<%# Eval("BookingId") %>' CssClass="btn btn-sm btn-outline-danger" 
+                        CommandArgument='<%# Eval("BookingId") %>' CssClass="btn btn-sm btn-outline-danger me-1" 
                         OnClientClick="return confirm('Are you sure you want to cancel this booking?');"
                         Visible='<%# Eval("Status").ToString() == "Confirmed" %>'>
-                        Cancel
+                        <i class="fas fa-times me-1"></i>Cancel
                     </asp:LinkButton>
+                    <button type="button" class="btn btn-sm btn-primary btn-print-ticket" 
+                        data-bookingid='<%# (int)Eval("BookingId") > 1000 ? (int)Eval("BookingId") - 1000 : Eval("BookingId") %>'
+                        data-fullname='<%# Eval("FullName") %>'
+                        data-movie='<%# Eval("Title") %>'
+                        data-date='<%# Eval("StartTime", "{0:f}") %>'
+                        data-theater='<%# Eval("TheaterName") %>'
+                        data-seats='<%# Eval("Seats") %>'
+                        data-amount='<%# Eval("TotalAmount", "${0:N2}") %>'>
+                        <i class="fas fa-print me-1"></i>Print
+                    </button>
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

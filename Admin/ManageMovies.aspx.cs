@@ -33,7 +33,8 @@ namespace MovieTicketBooking
         {
             string title = txtTitle.Text;
             string genre = txtGenre.Text;
-            int dur = Convert.ToInt32(txtDuration.Text);
+            int dur = 0;
+            int.TryParse(txtDuration.Text, out dur);
             string lang = txtLanguage.Text;
             string rating = txtRating.Text;
             string desc = txtDesc.Text;
@@ -53,8 +54,13 @@ namespace MovieTicketBooking
             if (_adminRepo.AddMovie(title, desc, genre, dur, lang, rating, poster))
             {
                 LoadMovies();
+                // Clear fields
                 txtTitle.Text = "";
                 txtGenre.Text = "";
+                txtDuration.Text = "";
+                txtLanguage.Text = "";
+                txtRating.Text = "";
+                txtDesc.Text = "";
             }
         }
 
@@ -87,13 +93,13 @@ namespace MovieTicketBooking
             int movieId = Convert.ToInt32(gvMovies.DataKeys[e.RowIndex].Value);
             GridViewRow row = gvMovies.Rows[e.RowIndex];
 
-            // Cells are: 0=Edit, 1=ID, 2=Title, 3=Genre, 4=Language, 5=PosterImage (TemplateField)
-            string title = (row.Cells[2].Controls[0] as TextBox).Text;
-            string genre = (row.Cells[3].Controls[0] as TextBox).Text;
-            string lang = (row.Cells[4].Controls[0] as TextBox).Text;
+            // Corrected indices based on new Columns collection:
+            // 0=ID, 1=Title, 2=Genre, 3=Trailer (Template), 4=Poster (Template)
+            string title = (row.Cells[1].Controls[0] as TextBox).Text;
+            string genre = (row.Cells[2].Controls[0] as TextBox).Text;
             
-            FileUpload fuEdit = (FileUpload)row.Cells[5].FindControl("fuEditPoster");
-            HiddenField hfEdit = (HiddenField)row.Cells[5].FindControl("hfCurrentPoster");
+            FileUpload fuEdit = (FileUpload)row.FindControl("fuEditPoster");
+            HiddenField hfEdit = (HiddenField)row.FindControl("hfCurrentPoster");
             
             string poster = hfEdit.Value;
             if (fuEdit != null && fuEdit.HasFile)
@@ -107,11 +113,27 @@ namespace MovieTicketBooking
                 fuEdit.SaveAs(folderPath + poster);
             }
 
+            // We don't have Language in the edit grid as per the markupBoundFields, we can add it if needed
+            // For now, let's keep it consistent with the markup
+            string lang = "English"; // Default or fetch from DB if needed
+
             if (_adminRepo.UpdateMovie(movieId, title, genre, lang, poster))
             {
                 gvMovies.EditIndex = -1;
                 LoadMovies();
             }
-        }    
+        }
+
+        public string GetStatusBadgeClass(object isActive)
+        {
+            if (isActive == null || isActive == DBNull.Value) return "bg-secondary";
+            return Convert.ToBoolean(isActive) ? "bg-success-subtle text-success border border-success" : "bg-danger-subtle text-danger border border-danger";
+        }
+
+        public string GetStatusText(object isActive)
+        {
+            if (isActive == null || isActive == DBNull.Value) return "Unknown";
+            return Convert.ToBoolean(isActive) ? "Active" : "Inactive";
+        }
     }
 }

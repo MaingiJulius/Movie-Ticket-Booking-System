@@ -9,16 +9,18 @@
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
     <!-- Custom CSS -->
-    <link href='<%= ResolveUrl("~/Content/Styles.css") %>' rel="stylesheet" />
-
+    <link href="~/Content/Styles.css" rel="stylesheet" runat="server" />
     <asp:ContentPlaceHolder ID="head" runat="server">
     </asp:ContentPlaceHolder>
 </head>
 <body>
     <form id="form1" runat="server">
+        <asp:ScriptManager ID="ScriptManager1" runat="server"></asp:ScriptManager>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow">
             <div class="container">
                 <a class="navbar-brand" href='<%= ResolveUrl("~/Default.aspx") %>'>
@@ -38,43 +40,64 @@
                     </ul>
                     <ul class="navbar-nav ms-auto">
                         <%-- Logic for dynamic menu items --%>
-                        <asp:PlaceHolder ID="phGuest" runat="server">
+                        <% if (Session["UserId"] == null) { %>
                             <li class="nav-item">
                                 <a class="nav-link btn btn-outline-primary text-white px-3 mx-1" href='<%= ResolveUrl("~/Login.aspx") %>'>Login</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link btn btn-primary text-white px-3 mx-1" href='<%= ResolveUrl("~/Register.aspx") %>'>Register</a>
                             </li>
-                        </asp:PlaceHolder>
-
-                        <asp:PlaceHolder ID="phUser" runat="server" Visible="false">
-                            <li class="nav-item">
-                                <a class="nav-link" href='<%= ResolveUrl("~/MyBookings.aspx") %>'>My Bookings</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-warning" href="#">Hello, <asp:Literal ID="litUsername" runat="server" /></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href='<%= ResolveUrl("~/Logout.aspx") %>'>Logout</a>
-                            </li>
-                        </asp:PlaceHolder>
-
-                        <asp:PlaceHolder ID="phAdmin" runat="server" Visible="false">
+                        <% } else { 
+                            string role = Session["UserRole"] != null ? Session["UserRole"].ToString() : "User";
+                            if (role == "Admin") { %>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-info" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
                                     Admin Panel
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-dark">
-                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/AdminDashboard.aspx") %>'>Dashboard</a></li>
-                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ManageMovies.aspx") %>'>Manage Movies</a></li>
-                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ManageShowtimes.aspx") %>'>Manage Showtimes</a></li>
-                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ManageBookings.aspx") %>'>Manage Bookings</a></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/AdminDashboard.aspx") %>'><i class="fas fa-columns me-2"></i>Dashboard</a></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ManageUsers.aspx") %>'><i class="fas fa-users-cog me-2"></i>Manage Users</a></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ViewBookings.aspx") %>'><i class="fas fa-receipt me-2"></i>View Bookings</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ManageMovies.aspx") %>'><i class="fas fa-edit me-2"></i>Manage Movies</a></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ManageShowtimes.aspx") %>'><i class="fas fa-calendar-alt me-2"></i>Showtimes</a></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Admin/ManageFeedback.aspx") %>'><i class="fas fa-comments me-2"></i>Feedback</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/EditProfile.aspx") %>'><i class="fas fa-user-edit me-2"></i>Edit Profile</a></li>
                                 </ul>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href='<%= ResolveUrl("~/Logout.aspx") %>'>Logout</a>
                             </li>
-                        </asp:PlaceHolder>
+                            <% } else { %>
+                            <li class="nav-item">
+                                <a class="nav-link" href='<%= ResolveUrl("~/MyBookings.aspx") %>'>My Bookings</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-warning" href="#">Hello, <%= Session["Username"] %></a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-primary" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                    My Account
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-dark">
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/UserDashboard.aspx") %>'><i class="fas fa-columns me-2"></i>Dashboard</a></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/MyBookings.aspx") %>'><i class="fas fa-ticket-alt me-2"></i>My Bookings</a></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/Movies.aspx") %>'><i class="fas fa-film me-2"></i>Browse Movies</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href='<%= ResolveUrl("~/EditProfile.aspx") %>'><i class="fas fa-user-edit me-2"></i>Edit Profile</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href='<%= ResolveUrl("~/Logout.aspx") %>'>Logout</a>
+                            </li>
+                            <% } %>
+                        <% } %>
+                        <li class="nav-item ms-3 d-flex align-items-center">
+                            <button class="btn btn-link text-white-50 p-0 fs-5" id="themeToggle" type="button">
+                                <i class="fas fa-moon"></i>
+                            </button>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -97,6 +120,103 @@
 
         <!-- Bootstrap JS Bundle -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        
+        <script>
+            // Theme Toggle Logic
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = themeToggle.querySelector('i');
+            const html = document.documentElement;
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-bs-theme', savedTheme);
+            updateIcon(savedTheme);
+
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = html.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                html.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateIcon(newTheme);
+            });
+
+            function updateIcon(theme) {
+                if (theme === 'dark') {
+                    themeIcon.classList.replace('fa-moon', 'fa-sun');
+                    themeToggle.classList.replace('text-white-50', 'text-warning');
+                } else {
+                    themeIcon.classList.replace('fa-sun', 'fa-moon');
+                    themeToggle.classList.replace('text-warning', 'text-white-50');
+                }
+            }
+
+            // Print Ticket Logic
+            window.printTicket = function(bookingId, name, movie, date, theater, seats, amount) {
+                const area = document.getElementById('printableTicketArea');
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Booking:${bookingId}|Movie:${movie}|User:${name}`;
+                
+                area.innerHTML = `
+                    <div class="ticket">
+                        <div class="ticket-main">
+                            <div class="ticket-brand"><span class="text-primary">Cine</span>Ticket</div>
+                            <div class="ticket-movie-title">${movie}</div>
+                            <div class="ticket-info-grid">
+                                <div class="info-item">
+                                    <label>Customer Name</label>
+                                    <span>${name}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Date & Time</label>
+                                    <span>${date}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Theater</label>
+                                    <span>${theater}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Seats</label>
+                                    <span>${seats}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Amount Paid</label>
+                                    <span>${amount}</span>
+                                </div>
+                            </div>
+                            <div class="ticket-footer">
+                                <p>Please present this ticket at the cinema entrance. Valid for one entry only.</p>
+                                <p>&copy; ${new Date().getFullYear()} CineTicket. All rights reserved.</p>
+                            </div>
+                        </div>
+                        <div class="ticket-stub">
+                            <img src="${qrUrl}" alt="QR Code" class="ticket-qr" />
+                            <div class="ticket-id">#${bookingId}</div>
+                            <div class="mt-2 small text-muted text-uppercase">Scan for Entry</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Wait for QR image to load before printing
+                const img = area.querySelector('img');
+                if (img.complete) {
+                    window.print();
+                } else {
+                    img.onload = () => window.print();
+                }
+            };
+
+            // Delegated click handler for print buttons
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.btn-print-ticket');
+                if (btn) {
+                    const d = btn.dataset;
+                    window.printTicket(d.bookingid, d.fullname, d.movie, d.date, d.theater, d.seats, d.amount);
+                }
+            });
+        </script>
+        
+        <!-- Printable Area (Hidden on screen) -->
+        <div id="printableTicketArea" class="ticket-container"></div>
     </form>
 </body>
 </html>

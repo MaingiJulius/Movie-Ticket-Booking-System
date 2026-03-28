@@ -30,13 +30,11 @@ namespace MovieTicketBooking.Admin
             {
                 gvShowtimes.DataSource = dt;
                 gvShowtimes.DataBind();
-                lblNoData.Visible = false;
             }
             else
             {
                 gvShowtimes.DataSource = null;
                 gvShowtimes.DataBind();
-                lblNoData.Visible = true;
             }
         }
 
@@ -91,10 +89,11 @@ namespace MovieTicketBooking.Admin
             int showtimeId = Convert.ToInt32(gvShowtimes.DataKeys[e.RowIndex].Value);
             GridViewRow row = gvShowtimes.Rows[e.RowIndex];
 
-            // Cells index corresponds to BoundFields. 0 is Edit button, 1 is ID, 2 is Movie, 3 is Theater, 4 is StartTime, 5 is Price
-            string theater = (row.Cells[3].Controls[0] as TextBox).Text;
-            DateTime startTime = Convert.ToDateTime((row.Cells[4].Controls[0] as TextBox).Text);
-            decimal price = Convert.ToDecimal((row.Cells[5].Controls[0] as TextBox).Text);
+            // Corrected indices based on new Columns collection:
+            // 0=ID, 1=Movie, 2=Theater (Bound), 3=StartTime (Bound), 4=Price (Bound)
+            string theater = (row.FindControl("txtEditTheater") as TextBox).Text;
+            DateTime startTime = Convert.ToDateTime((row.FindControl("txtEditStartTime") as TextBox).Text);
+            decimal price = Convert.ToDecimal((row.FindControl("txtEditPrice") as TextBox).Text);
 
             if (_adminRepo.UpdateShowtime(showtimeId, theater, startTime, price))
             {

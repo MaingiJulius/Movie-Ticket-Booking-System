@@ -9,9 +9,9 @@ namespace MovieTicketBooking.DataAccess
         public DataTable GetDashboardStats()
         {
             string query = @"SELECT 
-                             (SELECT COUNT(*) FROM Movies) as TotalMovies,
-                             (SELECT COUNT(*) FROM Users WHERE Role = 'User') as TotalUsers,
-                             (SELECT COUNT(*) FROM Bookings WHERE Status = 'Confirmed') as ActiveBookings,
+                             (SELECT COUNT(*) FROM Movies WHERE IsActive = 1) as TotalMovies,
+                             (SELECT COUNT(*) FROM Users) as TotalUsers,
+                             (SELECT COUNT(*) FROM Bookings) as ActiveBookings,
                              (SELECT ISNULL(SUM(TotalAmount), 0) FROM Bookings WHERE Status = 'Confirmed') as TotalRevenue";
             return DBHelper.ExecuteQuery(query);
         }
@@ -51,6 +51,20 @@ namespace MovieTicketBooking.DataAccess
             return DBHelper.ExecuteNonQuery(query, paras) > 0;
         }
 
+        public bool CancelBooking(int bookingId)
+        {
+            string query = "UPDATE Bookings SET Status = 'Canceled' WHERE BookingId = @id";
+            SqlParameter[] paras = { new SqlParameter("@id", bookingId) };
+            return DBHelper.ExecuteNonQuery(query, paras) > 0;
+        }
+
+        public bool DeleteBooking(int bookingId)
+        {
+            string query = "DELETE FROM Bookings WHERE BookingId = @id";
+            SqlParameter[] paras = { new SqlParameter("@id", bookingId) };
+            return DBHelper.ExecuteNonQuery(query, paras) > 0;
+        }
+
         public bool AddShowtime(int movieId, string theaterName, DateTime startTime, decimal price)
         {
             string query = "INSERT INTO Showtimes (MovieId, TheaterName, StartTime, Price) VALUES (@mid, @th, @st, @p)";
@@ -75,15 +89,6 @@ namespace MovieTicketBooking.DataAccess
             return DBHelper.ExecuteNonQuery(query, paras) > 0;
         }
 
-        public DataTable GetAllShowtimes()
-        {
-            string query = @"SELECT S.ShowtimeId, M.Title, S.TheaterName, S.StartTime, S.Price
-                             FROM Showtimes S
-                             INNER JOIN Movies M ON S.MovieId = M.MovieId
-                             ORDER BY S.StartTime DESC";
-            return DBHelper.ExecuteQuery(query);
-        }
-
         public bool DeleteShowtime(int showtimeId)
         {
             string query = "DELETE FROM Showtimes WHERE ShowtimeId = @id";
@@ -91,15 +96,44 @@ namespace MovieTicketBooking.DataAccess
             return DBHelper.ExecuteNonQuery(query, paras) > 0;
         }
 
+        public DataTable GetAllShowtimes()
+        {
+            string query = @"SELECT S.ShowtimeId, M.Title, S.TheaterName, S.StartTime, S.Price
+                             FROM Showtimes S
+                             INNER JOIN Movies M ON S.MovieId = M.MovieId
+                             ORDER BY S.ShowtimeId DESC";
+            return DBHelper.ExecuteQuery(query);
+        }
+
+
+
         public DataTable GetAllBookings()
         {
-            string query = @"SELECT B.BookingId, U.Username, M.Title, S.StartTime, B.TotalAmount, B.Status
+            string query = @"SELECT B.BookingId, U.Username, U.FullName, M.Title, S.TheaterName, S.StartTime, B.TotalAmount, B.Status,
+                             (SELECT STRING_AGG(SeatNumber, ', ') FROM BookingDetails WHERE BookingId = B.BookingId) as Seats
                              FROM Bookings B
                              INNER JOIN Users U ON B.UserId = U.UserId
                              INNER JOIN Showtimes S ON B.ShowtimeId = S.ShowtimeId
                              INNER JOIN Movies M ON S.MovieId = M.MovieId
-                             ORDER BY B.BookingDate DESC";
+                             ORDER BY B.BookingId DESC";
             return DBHelper.ExecuteQuery(query);
+        }
+
+        public DataTable GetFeedback()
+        {
+            string query = @"SELECT R.RatingId, M.Title as MovieTitle, U.Username, R.Score, R.Comment, R.CreatedAt
+                             FROM Ratings R
+                             INNER JOIN Movies M ON R.MovieId = M.MovieId
+                             INNER JOIN Users U ON R.UserId = U.UserId
+                             ORDER BY R.RatingId DESC";
+            return DBHelper.ExecuteQuery(query);
+        }
+
+        public bool DeleteFeedback(int ratingId)
+        {
+            string query = "DELETE FROM Ratings WHERE RatingId = @id";
+            SqlParameter[] paras = { new SqlParameter("@id", ratingId) };
+            return DBHelper.ExecuteNonQuery(query, paras) > 0;
         }
     }
 }

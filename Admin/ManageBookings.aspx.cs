@@ -25,7 +25,6 @@ namespace MovieTicketBooking.Admin
             {
                 gvBookings.DataSource = dt;
                 gvBookings.DataBind();
-                lblNoData.Visible = false;
 
                 decimal total = 0;
                 foreach (DataRow row in dt.Rows)
@@ -42,9 +41,15 @@ namespace MovieTicketBooking.Admin
             {
                 gvBookings.DataSource = null;
                 gvBookings.DataBind();
-                lblNoData.Visible = true;
-                lblTotalRevenue.Visible = false;
+                lblTotalRevenue.Text = "$0.00"; // Set to 0 when no data
+                lblTotalRevenue.Visible = false; // Keep it hidden if no data
             }
+        }
+
+        public string GetStatusBadgeClass(object status)
+        {
+            if (status == null || status == DBNull.Value) return "bg-secondary";
+            return status.ToString() == "Confirmed" ? "bg-success-subtle text-success border border-success" : "bg-warning-subtle text-warning border border-warning";
         }
     }
 }
