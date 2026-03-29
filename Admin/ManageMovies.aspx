@@ -24,7 +24,7 @@
                         OnRowUpdating="gvMovies_RowUpdating">
                         <HeaderStyle CssClass="bg-light text-secondary border-bottom py-3" />
                         <Columns>
-                            <asp:BoundField DataField="MovieId" HeaderText="ID" ReadOnly="True" ItemStyle-CssClass="fw-bold px-4" />
+                            <asp:BoundField DataField="MovieId" HeaderText="Movie ID" ReadOnly="True" ItemStyle-CssClass="fw-bold px-4" />
                             <asp:BoundField DataField="Title" HeaderText="Title" ItemStyle-CssClass="fw-semibold" />
                             <asp:BoundField DataField="Genre" HeaderText="Genre" />
                             <asp:TemplateField HeaderText="Poster Image">

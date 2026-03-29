@@ -135,5 +135,112 @@ namespace MovieTicketBooking.DataAccess
             SqlParameter[] paras = { new SqlParameter("@id", ratingId) };
             return DBHelper.ExecuteNonQuery(query, paras) > 0;
         }
+
+        public void FixDatabaseIdentities()
+        {
+            using (SqlConnection conn = DBHelper.GetConnection())
+            {
+                conn.Open();
+                
+                // 1. Snapshot all data
+                DataTable dtUsers = DBHelper.ExecuteQuery("SELECT * FROM Users ORDER BY UserId");
+                DataTable dtBookings = DBHelper.ExecuteQuery("SELECT * FROM Bookings ORDER BY BookingId");
+                DataTable dtDetails = DBHelper.ExecuteQuery("SELECT * FROM BookingDetails");
+                DataTable dtRatings = DBHelper.ExecuteQuery("SELECT * FROM Ratings");
+
+                using (SqlTransaction trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 2. Maps for re-indexing
+                        var userMap = new System.Collections.Generic.Dictionary<int, int>();
+                        var bookingMap = new System.Collections.Generic.Dictionary<int, int>();
+
+                        // 3. Clear existing data
+                        new SqlCommand("DELETE FROM Ratings", conn, trans).ExecuteNonQuery();
+                        new SqlCommand("DELETE FROM BookingDetails", conn, trans).ExecuteNonQuery();
+                        new SqlCommand("DELETE FROM Bookings", conn, trans).ExecuteNonQuery();
+                        new SqlCommand("DELETE FROM Users", conn, trans).ExecuteNonQuery();
+
+                        // 4. Re-insert Users
+                        int nextUserId = 1;
+                        new SqlCommand("SET IDENTITY_INSERT Users ON", conn, trans).ExecuteNonQuery();
+                        foreach (DataRow row in dtUsers.Rows)
+                        {
+                            int oldId = (int)row["UserId"];
+                            int newId = nextUserId++;
+                            userMap[oldId] = newId;
+                            
+                            var cmd = new SqlCommand("INSERT INTO Users (UserId, Username, Password, Email, FullName, Role) VALUES (@id, @u, @p, @e, @f, @r)", conn, trans);
+                            cmd.Parameters.AddWithValue("@id", newId);
+                            cmd.Parameters.AddWithValue("@u", row["Username"]);
+                            cmd.Parameters.AddWithValue("@p", row["Password"]);
+                            cmd.Parameters.AddWithValue("@e", row["Email"]);
+                            cmd.Parameters.AddWithValue("@f", row["FullName"]);
+                            cmd.Parameters.AddWithValue("@r", row["Role"]);
+                            cmd.ExecuteNonQuery();
+                        }
+                        new SqlCommand("SET IDENTITY_INSERT Users OFF", conn, trans).ExecuteNonQuery();
+
+                        // 5. Re-insert Bookings
+                        int nextBookingId = 1;
+                        new SqlCommand("SET IDENTITY_INSERT Bookings ON", conn, trans).ExecuteNonQuery();
+                        foreach (DataRow row in dtBookings.Rows)
+                        {
+                            int oldId = (int)row["BookingId"];
+                            int newId = nextBookingId++;
+                            bookingMap[oldId] = newId;
+
+                            int oldUserId = (int)row["UserId"];
+                            int newUserId = userMap.ContainsKey(oldUserId) ? userMap[oldUserId] : oldUserId;
+                            
+                            var cmd = new SqlCommand("INSERT INTO Bookings (BookingId, UserId, ShowtimeId, TotalAmount, Status, BookingDate) VALUES (@bid, @uid, @sid, @amt, @st, @dt)", conn, trans);
+                            cmd.Parameters.AddWithValue("@bid", newId);
+                            cmd.Parameters.AddWithValue("@uid", newUserId);
+                            cmd.Parameters.AddWithValue("@sid", row["ShowtimeId"]);
+                            cmd.Parameters.AddWithValue("@amt", row["TotalAmount"]);
+                            cmd.Parameters.AddWithValue("@st", row["Status"]);
+                            cmd.Parameters.AddWithValue("@dt", row["BookingDate"]);
+                            cmd.ExecuteNonQuery();
+                        }
+                        new SqlCommand("SET IDENTITY_INSERT Bookings OFF", conn, trans).ExecuteNonQuery();
+
+                        // 6. Re-insert Details and Ratings
+                        foreach (DataRow row in dtDetails.Rows)
+                        {
+                            int oldId = (int)row["BookingId"];
+                            int newId = bookingMap.ContainsKey(oldId) ? bookingMap[oldId] : oldId;
+                            var cmd = new SqlCommand("INSERT INTO BookingDetails (BookingId, SeatNumber) VALUES (@bid, @seat)", conn, trans);
+                            cmd.Parameters.AddWithValue("@bid", newId);
+                            cmd.Parameters.AddWithValue("@seat", row["SeatNumber"]);
+                            cmd.ExecuteNonQuery();
+                        }
+                        foreach (DataRow row in dtRatings.Rows)
+                        {
+                            int oldUserId = (int)row["UserId"];
+                            int newUserId = userMap.ContainsKey(oldUserId) ? userMap[oldUserId] : oldUserId;
+                            var cmd = new SqlCommand("INSERT INTO Ratings (MovieId, UserId, Score, Comment, CreatedAt) VALUES (@mid, @uid, @sc, @cm, @dt)", conn, trans);
+                            cmd.Parameters.AddWithValue("@mid", row["MovieId"]);
+                            cmd.Parameters.AddWithValue("@uid", newUserId);
+                            cmd.Parameters.AddWithValue("@sc", row["Score"]);
+                            cmd.Parameters.AddWithValue("@cm", row["Comment"]);
+                            cmd.Parameters.AddWithValue("@dt", row["CreatedAt"]);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        trans.Commit();
+                        
+                        // Reseed after commit
+                        DBHelper.ExecuteNonQuery("DBCC CHECKIDENT ('Users', RESEED, " + (nextUserId - 1) + ")");
+                        DBHelper.ExecuteNonQuery("DBCC CHECKIDENT ('Bookings', RESEED, " + (nextBookingId - 1) + ")");
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        System.Diagnostics.Debug.WriteLine("REBASE FAILED: " + ex.Message);
+                    }
+                }
+            }
+        }
     }
 }

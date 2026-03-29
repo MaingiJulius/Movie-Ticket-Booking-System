@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -21,6 +21,11 @@ namespace MovieTicketBooking.Admin
 
             if (!IsPostBack)
             {
+                if (Session["RebaseDone"] == null)
+                {
+                    try { _adminRepo.FixDatabaseIdentities(); } catch { }
+                    Session["RebaseDone"] = true;
+                }
                 LoadStats();
             }
         }

@@ -26,7 +26,7 @@
                     DataKeyNames="RatingId" OnRowCommand="gvFeedback_RowCommand">
                     <HeaderStyle CssClass="bg-light text-secondary border-bottom py-3" />
                     <Columns>
-                        <asp:BoundField DataField="RatingId" HeaderText="ID" ItemStyle-CssClass="fw-bold px-4" />
+                        <asp:BoundField DataField="RatingId" HeaderText="Rating ID" ItemStyle-CssClass="fw-bold px-4" />
                         <asp:BoundField DataField="MovieTitle" HeaderText="Movie" ItemStyle-CssClass="fw-semibold" />
                         <asp:TemplateField HeaderText="User">
                             <ItemTemplate>
@@ -58,13 +58,6 @@
                             </ItemTemplate>
                         </asp:TemplateField>
                     </Columns>
-                    <EmptyDataTemplate>
-                        <div class="text-center py-5">
-                            <i class="fas fa-comments fa-3x text-muted opacity-25 mb-3"></i>
-                            <p class="text-muted">No feedback found to manage.</p>
-                        </div>
-                    </EmptyDataTemplate>
-                </asp:GridView>
                     <EmptyDataTemplate>
                         <div class="text-center py-5">
                             <i class="fas fa-comment-slash fa-3x text-muted opacity-25 mb-3"></i>

@@ -21,11 +21,7 @@
                             DataKeyNames="UserId" OnRowCommand="gvUsers_RowCommand">
                             <HeaderStyle CssClass="bg-light text-secondary border-bottom py-3" />
                             <Columns>
-                            <asp:TemplateField HeaderText="ID" ItemStyle-CssClass="fw-bold px-4">
-                                <ItemTemplate>
-                                    <%# (int)Eval("UserId") >= 1001 ? (int)Eval("UserId") - 997 : Eval("UserId") %>
-                                </ItemTemplate>
-                            </asp:TemplateField>
+                                <asp:BoundField DataField="UserId" HeaderText="User ID" ItemStyle-CssClass="fw-bold px-4" />
                                 <asp:TemplateField HeaderText="User Info">
                                     <ItemTemplate>
                                         <div class="d-flex align-items-center">

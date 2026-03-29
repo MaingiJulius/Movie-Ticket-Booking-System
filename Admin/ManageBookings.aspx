@@ -13,7 +13,7 @@
                 CssClass="table table-hover mb-0 align-middle" GridLines="None" DataKeyNames="BookingId">
                 <HeaderStyle CssClass="bg-light text-secondary border-bottom py-3" />
                 <Columns>
-                    <asp:BoundField DataField="BookingId" HeaderText="ID" ItemStyle-CssClass="fw-bold px-4" />
+                    <asp:BoundField DataField="BookingId" HeaderText="Booking ID" ItemStyle-CssClass="fw-bold px-4" />
                     <asp:TemplateField HeaderText="Customer">
                         <ItemTemplate>
                             <div class="d-flex align-items-center">

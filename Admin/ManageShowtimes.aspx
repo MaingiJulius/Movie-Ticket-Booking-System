@@ -24,7 +24,7 @@
                 OnRowUpdating="gvShowtimes_RowUpdating">
                 <HeaderStyle CssClass="bg-light text-secondary border-bottom py-3" />
                 <Columns>
-                    <asp:BoundField DataField="ShowtimeId" HeaderText="ID" ReadOnly="True" ItemStyle-CssClass="fw-bold px-4" />
+                    <asp:BoundField DataField="ShowtimeId" HeaderText="Show ID" ReadOnly="True" ItemStyle-CssClass="fw-bold px-4" />
                     <asp:BoundField DataField="Title" HeaderText="Movie" ReadOnly="True" ItemStyle-CssClass="fw-semibold" />
                     <asp:TemplateField HeaderText="Theater/Hall">
                         <ItemTemplate><%# Eval("TheaterName") %></ItemTemplate>

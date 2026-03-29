@@ -20,11 +20,7 @@
                         DataKeyNames="BookingId" OnRowCommand="gvAllBookings_RowCommand">
                         <HeaderStyle CssClass="bg-light text-secondary border-bottom py-3" />
                         <Columns>
-                            <asp:TemplateField HeaderText="ID" ItemStyle-CssClass="fw-bold px-4">
-                                <ItemTemplate>
-                                    <%# (int)Eval("BookingId") > 1000 ? (int)Eval("BookingId") - 1000 : Eval("BookingId") %>
-                                </ItemTemplate>
-                            </asp:TemplateField>
+                            <asp:BoundField DataField="BookingId" HeaderText="Booking ID" ItemStyle-CssClass="fw-bold px-4" />
                             <asp:TemplateField HeaderText="Customer">
                                 <ItemTemplate>
                                     <div class="d-flex align-items-center">
@@ -55,7 +51,7 @@
                                         <i class="fas fa-ban me-1"></i>Cancel
                                     </asp:LinkButton>
                                     <button type="button" class="btn btn-sm btn-outline-primary border-0 me-1 btn-print-ticket"
-                                        data-bookingid='<%# (int)Eval("BookingId") > 1000 ? (int)Eval("BookingId") - 1000 : Eval("BookingId") %>'
+                                        data-bookingid='<%# Eval("BookingId") %>'
                                         data-fullname='<%# Eval("FullName") %>'
                                         data-movie='<%# Eval("Title") %>'
                                         data-date='<%# Eval("StartTime", "{0:g}") %>'
