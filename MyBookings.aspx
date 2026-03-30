@@ -40,16 +40,18 @@
                         Visible='<%# Eval("Status").ToString() == "Confirmed" %>'>
                         <i class="fas fa-times me-1"></i>Cancel
                     </asp:LinkButton>
-                    <button type="button" class="btn btn-sm btn-primary btn-print-ticket" 
-                        data-bookingid='<%# (int)Eval("BookingId") > 1000 ? (int)Eval("BookingId") - 1000 : Eval("BookingId") %>'
-                        data-fullname='<%# Eval("FullName") %>'
-                        data-movie='<%# Eval("Title") %>'
-                        data-date='<%# Eval("StartTime", "{0:f}") %>'
-                        data-theater='<%# Eval("TheaterName") %>'
-                        data-seats='<%# Eval("Seats") %>'
-                        data-amount='<%# Eval("TotalAmount", "${0:N2}") %>'>
-                        <i class="fas fa-print me-1"></i>Print
-                    </button>
+                    <asp:PlaceHolder runat="server" Visible='<%# Eval("Status").ToString() == "Confirmed" %>'>
+                        <button type="button" class="btn btn-sm btn-primary btn-print-ticket" 
+                            data-bookingid='<%# (int)Eval("BookingId") > 1000 ? (int)Eval("BookingId") - 1000 : Eval("BookingId") %>'
+                            data-fullname='<%# Eval("FullName") %>'
+                            data-movie='<%# Eval("Title") %>'
+                            data-date='<%# Eval("StartTime", "{0:f}") %>'
+                            data-theater='<%# Eval("TheaterName") %>'
+                            data-seats='<%# Eval("Seats") %>'
+                            data-amount='<%# Eval("TotalAmount", "${0:N2}") %>'>
+                            <i class="fas fa-print me-1"></i>Print
+                        </button>
+                    </asp:PlaceHolder>
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

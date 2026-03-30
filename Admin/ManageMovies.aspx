@@ -1,4 +1,4 @@
-<%@ Page Title="Manage Movies" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ManageMovies.aspx.cs" Inherits="MovieTicketBooking.ManageMovies" %>
+<%@ Page Title="Manage Movies" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ManageMovies.aspx.cs" Inherits="MovieTicketBooking.ManageMovies" MaintainScrollPositionOnPostback="true" %>
 
 <%-- No head content --%>
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
@@ -32,7 +32,8 @@
                                     <asp:Image ID="imgPosterPreview" runat="server" ImageUrl='<%# Eval("PosterUrl").ToString().StartsWith("http") ? Eval("PosterUrl") : "~/Content/Images/" + Eval("PosterUrl") %>' CssClass="rounded shadow-sm" Width="40" Height="60" />
                                 </ItemTemplate>
                                 <EditItemTemplate>
-                                    <asp:FileUpload ID="fuEditPoster" runat="server" CssClass="form-control form-control-sm mb-1" />
+                                    <asp:FileUpload ID="fuEditPoster" runat="server" CssClass="form-control form-control-sm mb-1" onchange="encodeImageFileAsURL(this);" />
+                                    <asp:HiddenField ID="hfNewPosterBase64" runat="server" />
                                     <asp:HiddenField ID="hfCurrentPoster" runat="server" Value='<%# Eval("PosterUrl") %>' />
                                     <small class="x-small text-muted">Leave blank to keep current</small>
                                 </EditItemTemplate>
@@ -80,6 +81,25 @@
             <asp:AsyncPostBackTrigger ControlID="gvMovies" />
         </Triggers>
     </asp:UpdatePanel>
+
+    <script type="text/javascript">
+        function encodeImageFileAsURL(element) {
+            var file = element.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onloadend = function () {
+                    // Find the hidden field in the same container.
+                    var parent = element.parentElement;
+                    var hiddenField = parent.querySelector('input[id*="hfNewPosterBase64"]');
+                    // Because WebForms mangles IDs, we find it by the static suffix we gave it
+                    if (hiddenField) {
+                        hiddenField.value = reader.result;
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
 
     <!-- Add Movie Modal -->
     <div class="modal fade" id="addMovieModal" tabindex="-1">

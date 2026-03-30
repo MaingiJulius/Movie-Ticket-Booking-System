@@ -8,11 +8,11 @@
     <title><%: Page.Title %> - Movie Ticket Booking</title>
     
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" runat="server" />
     <!-- FontAwesome Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+    <link href="~/Content/font-awesome/all.min.css" rel="stylesheet" runat="server" />
+    <!-- Google Fonts (Local) -->
+    <link href="~/Content/fonts.css" rel="stylesheet" runat="server" />
     <!-- Custom CSS -->
     <link href="~/Content/Styles.css" rel="stylesheet" runat="server" />
     <asp:ContentPlaceHolder ID="head" runat="server">
@@ -119,7 +119,7 @@
         </footer>
 
         <!-- Bootstrap JS Bundle -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="<%= ResolveUrl("~/Scripts/bootstrap.bundle.min.js") %>"></script>
         
         <script>
             // Theme Toggle Logic

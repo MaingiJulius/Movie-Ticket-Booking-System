@@ -50,16 +50,18 @@
                                         OnClientClick="return confirm('Are you sure you want to cancel this booking?');">
                                         <i class="fas fa-ban me-1"></i>Cancel
                                     </asp:LinkButton>
-                                    <button type="button" class="btn btn-sm btn-outline-primary border-0 me-1 btn-print-ticket"
-                                        data-bookingid='<%# Eval("BookingId") %>'
-                                        data-fullname='<%# Eval("FullName") %>'
-                                        data-movie='<%# Eval("Title") %>'
-                                        data-date='<%# Eval("StartTime", "{0:g}") %>'
-                                        data-theater='<%# Eval("TheaterName") %>'
-                                        data-seats='<%# Eval("Seats") %>'
-                                        data-amount='<%# Eval("TotalAmount", "${0:N2}") %>'>
-                                        <i class="fas fa-print me-1"></i>Print
-                                    </button>
+                                    <asp:PlaceHolder runat="server" Visible='<%# Eval("Status").ToString() == "Confirmed" %>'>
+                                        <button type="button" class="btn btn-sm btn-outline-primary border-0 me-1 btn-print-ticket"
+                                            data-bookingid='<%# Eval("BookingId") %>'
+                                            data-fullname='<%# Eval("FullName") %>'
+                                            data-movie='<%# Eval("Title") %>'
+                                            data-date='<%# Eval("StartTime", "{0:g}") %>'
+                                            data-theater='<%# Eval("TheaterName") %>'
+                                            data-seats='<%# Eval("Seats") %>'
+                                            data-amount='<%# Eval("TotalAmount", "${0:N2}") %>'>
+                                            <i class="fas fa-print me-1"></i>Print
+                                        </button>
+                                    </asp:PlaceHolder>
                                     <asp:LinkButton ID="btnDelete" runat="server" CommandName="DeleteBooking" 
                                         CommandArgument='<%# Eval("BookingId") %>' CssClass="btn btn-sm btn-outline-danger border-0"
                                         OnClientClick="return confirm('PERMANENT DELETE: Are you sure? This cannot be undone.');">

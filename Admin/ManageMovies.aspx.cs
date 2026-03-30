@@ -97,13 +97,32 @@ namespace MovieTicketBooking
             // 0=ID, 1=Title, 2=Genre, 3=Trailer (Template), 4=Poster (Template)
             string title = (row.Cells[1].Controls[0] as TextBox).Text;
             string genre = (row.Cells[2].Controls[0] as TextBox).Text;
-            
             FileUpload fuEdit = (FileUpload)row.FindControl("fuEditPoster");
             HiddenField hfEdit = (HiddenField)row.FindControl("hfCurrentPoster");
+            HiddenField hfNewBase64 = (HiddenField)row.FindControl("hfNewPosterBase64");
             
             string poster = hfEdit.Value;
-            if (fuEdit != null && fuEdit.HasFile)
+
+            if (hfNewBase64 != null && !string.IsNullOrEmpty(hfNewBase64.Value))
             {
+                string base64Data = hfNewBase64.Value;
+                int dataIndex = base64Data.IndexOf("base64,") + 7;
+                if (dataIndex >= 7)
+                {
+                    string base64String = base64Data.Substring(dataIndex);
+                    byte[] imageBytes = Convert.FromBase64String(base64String);
+
+                    string folderPath = Server.MapPath("~/Content/Images/");
+                    if (!System.IO.Directory.Exists(folderPath))
+                        System.IO.Directory.CreateDirectory(folderPath);
+
+                    poster = Guid.NewGuid().ToString() + ".jpg";
+                    System.IO.File.WriteAllBytes(folderPath + poster, imageBytes);
+                }
+            }
+            else if (fuEdit != null && fuEdit.HasFile)
+            {
+                // Fallback for regular postback
                 string folderPath = Server.MapPath("~/Content/Images/");
                 if (!System.IO.Directory.Exists(folderPath))
                     System.IO.Directory.CreateDirectory(folderPath);
