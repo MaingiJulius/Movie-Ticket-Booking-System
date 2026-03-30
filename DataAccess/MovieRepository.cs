@@ -10,11 +10,23 @@ namespace MovieTicketBooking.DataAccess
         {
             string query = @"SELECT *, 
                              (SELECT TOP 1 (TheaterName + ' @ ' + FORMAT(StartTime, 'h:mm tt')) 
-                              FROM Showtimes 
-                              WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
-                              ORDER BY StartTime ASC) as NextShow
+                               FROM Showtimes 
+                               WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
+                               ORDER BY StartTime ASC) as NextShow
                              FROM Movies M
                              WHERE IsActive = 1 
+                             ORDER BY MovieId DESC";
+            return DBHelper.ExecuteQuery(query);
+        }
+
+        public DataTable GetAllMoviesForAdmin()
+        {
+            string query = @"SELECT *, 
+                             (SELECT TOP 1 (TheaterName + ' @ ' + FORMAT(StartTime, 'h:mm tt')) 
+                               FROM Showtimes 
+                               WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
+                               ORDER BY StartTime ASC) as NextShow
+                             FROM Movies M
                              ORDER BY MovieId DESC";
             return DBHelper.ExecuteQuery(query);
         }
@@ -23,9 +35,9 @@ namespace MovieTicketBooking.DataAccess
         {
             string query = @"SELECT *, 
                              (SELECT TOP 1 (TheaterName + ' @ ' + FORMAT(StartTime, 'h:mm tt')) 
-                              FROM Showtimes 
-                              WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
-                              ORDER BY StartTime ASC) as NextShow
+                               FROM Showtimes 
+                               WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
+                               ORDER BY StartTime ASC) as NextShow
                              FROM Movies M
                              WHERE IsActive = 1";
             System.Collections.Generic.List<SqlParameter> paras = new System.Collections.Generic.List<SqlParameter>();

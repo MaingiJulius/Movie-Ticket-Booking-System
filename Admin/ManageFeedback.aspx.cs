@@ -20,14 +20,23 @@ namespace MovieTicketBooking.Admin
 
             if (!IsPostBack)
             {
+                ViewState["CurrentSort"] = "Newest";
                 LoadFeedback();
             }
         }
 
         private void LoadFeedback()
         {
-            gvFeedback.DataSource = _adminRepo.GetFeedback();
+            string sortBy = ViewState["CurrentSort"] != null ? ViewState["CurrentSort"].ToString() : "Newest";
+            gvFeedback.DataSource = _adminRepo.GetFeedback(sortBy);
             gvFeedback.DataBind();
+        }
+
+        protected void SortFeedback_Click(object sender, EventArgs e)
+        {
+            LinkButton btn = (LinkButton)sender;
+            ViewState["CurrentSort"] = btn.CommandArgument;
+            LoadFeedback();
         }
 
         protected void gvFeedback_RowCommand(object sender, GridViewCommandEventArgs e)

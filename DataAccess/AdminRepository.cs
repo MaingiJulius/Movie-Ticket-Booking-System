@@ -8,6 +8,8 @@ namespace MovieTicketBooking.DataAccess
     {
         public DataTable GetDashboardStats()
         {
+            try { FixDatabaseIdentities(); } catch { }
+
             string query = @"SELECT 
                              (SELECT COUNT(*) FROM Movies WHERE IsActive = 1) as TotalMovies,
                              (SELECT COUNT(*) FROM Users) as TotalUsers,
@@ -31,24 +33,36 @@ namespace MovieTicketBooking.DataAccess
             return DBHelper.ExecuteNonQuery(query, paras) > 0;
         }
 
-        public bool UpdateMovie(int movieId, string title, string genre, string lang, string poster)
+        public bool UpdateMovie(int movieId, string title, string desc, string genre, int duration, string lang, string rating, string poster, bool isActive)
         {
-            string query = "UPDATE Movies SET Title = @t, Genre = @g, Language = @l, PosterUrl = @p WHERE MovieId = @id";
+            string query = "UPDATE Movies SET Title = @t, Description = @d, Genre = @g, Duration = @dur, Language = @l, Rating = @r, PosterUrl = @p, IsActive = @a WHERE MovieId = @id";
             SqlParameter[] paras = {
                 new SqlParameter("@id", movieId),
                 new SqlParameter("@t", title),
+                new SqlParameter("@d", desc),
                 new SqlParameter("@g", genre),
+                new SqlParameter("@dur", duration),
                 new SqlParameter("@l", lang),
-                new SqlParameter("@p", poster)
+                new SqlParameter("@r", rating),
+                new SqlParameter("@p", poster),
+                new SqlParameter("@a", isActive)
             };
             return DBHelper.ExecuteNonQuery(query, paras) > 0;
         }
 
         public bool DeleteMovie(int movieId)
         {
-            string query = "UPDATE Movies SET IsActive = 0 WHERE MovieId = @id";
+            // Cascading delete to handle foreign key constraints
+            string sql = @"
+                DELETE FROM Watchlist WHERE MovieId = @id;
+                DELETE FROM Ratings WHERE MovieId = @id;
+                DELETE FROM BookingDetails WHERE BookingId IN (SELECT BookingId FROM Bookings WHERE ShowtimeId IN (SELECT ShowtimeId FROM Showtimes WHERE MovieId = @id));
+                DELETE FROM Bookings WHERE ShowtimeId IN (SELECT ShowtimeId FROM Showtimes WHERE MovieId = @id);
+                DELETE FROM Showtimes WHERE MovieId = @id;
+                DELETE FROM Movies WHERE MovieId = @id;
+            ";
             SqlParameter[] paras = { new SqlParameter("@id", movieId) };
-            return DBHelper.ExecuteNonQuery(query, paras) > 0;
+            return DBHelper.ExecuteNonQuery(sql, paras) > 0;
         }
 
         public bool CancelBooking(int bookingId)
@@ -105,8 +119,6 @@ namespace MovieTicketBooking.DataAccess
             return DBHelper.ExecuteQuery(query);
         }
 
-
-
         public DataTable GetAllBookings()
         {
             string query = @"SELECT B.BookingId, U.Username, U.FullName, M.Title, S.TheaterName, S.StartTime, B.TotalAmount, B.Status,
@@ -119,13 +131,21 @@ namespace MovieTicketBooking.DataAccess
             return DBHelper.ExecuteQuery(query);
         }
 
-        public DataTable GetFeedback()
+        public DataTable GetFeedback(string sortBy = "Newest")
         {
-            string query = @"SELECT R.RatingId, M.Title as MovieTitle, U.Username, R.Score, R.Comment, R.CreatedAt
-                             FROM Ratings R
-                             INNER JOIN Movies M ON R.MovieId = M.MovieId
-                             INNER JOIN Users U ON R.UserId = U.UserId
-                             ORDER BY R.RatingId DESC";
+            string orderBy = "F.CreatedAt DESC";
+            switch (sortBy)
+            {
+                case "Oldest": orderBy = "F.CreatedAt ASC"; break;
+                case "Highest": orderBy = "F.Score DESC"; break;
+                case "Lowest": orderBy = "F.Score ASC"; break;
+            }
+
+            string query = $@"SELECT F.RatingId, U.Username, M.Title as MovieTitle, F.Score, F.Comment, F.CreatedAt
+                             FROM Ratings F
+                             INNER JOIN Users U ON F.UserId = U.UserId
+                             INNER JOIN Movies M ON F.MovieId = M.MovieId
+                             ORDER BY {orderBy}";
             return DBHelper.ExecuteQuery(query);
         }
 
@@ -138,108 +158,15 @@ namespace MovieTicketBooking.DataAccess
 
         public void FixDatabaseIdentities()
         {
-            using (SqlConnection conn = DBHelper.GetConnection())
+            string[] tables = { "Users", "Movies", "Showtimes", "Bookings", "Ratings" };
+            foreach (var table in tables)
             {
-                conn.Open();
-                
-                // 1. Snapshot all data
-                DataTable dtUsers = DBHelper.ExecuteQuery("SELECT * FROM Users ORDER BY UserId");
-                DataTable dtBookings = DBHelper.ExecuteQuery("SELECT * FROM Bookings ORDER BY BookingId");
-                DataTable dtDetails = DBHelper.ExecuteQuery("SELECT * FROM BookingDetails");
-                DataTable dtRatings = DBHelper.ExecuteQuery("SELECT * FROM Ratings");
-
-                using (SqlTransaction trans = conn.BeginTransaction())
+                try
                 {
-                    try
-                    {
-                        // 2. Maps for re-indexing
-                        var userMap = new System.Collections.Generic.Dictionary<int, int>();
-                        var bookingMap = new System.Collections.Generic.Dictionary<int, int>();
-
-                        // 3. Clear existing data
-                        new SqlCommand("DELETE FROM Ratings", conn, trans).ExecuteNonQuery();
-                        new SqlCommand("DELETE FROM BookingDetails", conn, trans).ExecuteNonQuery();
-                        new SqlCommand("DELETE FROM Bookings", conn, trans).ExecuteNonQuery();
-                        new SqlCommand("DELETE FROM Users", conn, trans).ExecuteNonQuery();
-
-                        // 4. Re-insert Users
-                        int nextUserId = 1;
-                        new SqlCommand("SET IDENTITY_INSERT Users ON", conn, trans).ExecuteNonQuery();
-                        foreach (DataRow row in dtUsers.Rows)
-                        {
-                            int oldId = (int)row["UserId"];
-                            int newId = nextUserId++;
-                            userMap[oldId] = newId;
-                            
-                            var cmd = new SqlCommand("INSERT INTO Users (UserId, Username, Password, Email, FullName, Role) VALUES (@id, @u, @p, @e, @f, @r)", conn, trans);
-                            cmd.Parameters.AddWithValue("@id", newId);
-                            cmd.Parameters.AddWithValue("@u", row["Username"]);
-                            cmd.Parameters.AddWithValue("@p", row["Password"]);
-                            cmd.Parameters.AddWithValue("@e", row["Email"]);
-                            cmd.Parameters.AddWithValue("@f", row["FullName"]);
-                            cmd.Parameters.AddWithValue("@r", row["Role"]);
-                            cmd.ExecuteNonQuery();
-                        }
-                        new SqlCommand("SET IDENTITY_INSERT Users OFF", conn, trans).ExecuteNonQuery();
-
-                        // 5. Re-insert Bookings
-                        int nextBookingId = 1;
-                        new SqlCommand("SET IDENTITY_INSERT Bookings ON", conn, trans).ExecuteNonQuery();
-                        foreach (DataRow row in dtBookings.Rows)
-                        {
-                            int oldId = (int)row["BookingId"];
-                            int newId = nextBookingId++;
-                            bookingMap[oldId] = newId;
-
-                            int oldUserId = (int)row["UserId"];
-                            int newUserId = userMap.ContainsKey(oldUserId) ? userMap[oldUserId] : oldUserId;
-                            
-                            var cmd = new SqlCommand("INSERT INTO Bookings (BookingId, UserId, ShowtimeId, TotalAmount, Status, BookingDate) VALUES (@bid, @uid, @sid, @amt, @st, @dt)", conn, trans);
-                            cmd.Parameters.AddWithValue("@bid", newId);
-                            cmd.Parameters.AddWithValue("@uid", newUserId);
-                            cmd.Parameters.AddWithValue("@sid", row["ShowtimeId"]);
-                            cmd.Parameters.AddWithValue("@amt", row["TotalAmount"]);
-                            cmd.Parameters.AddWithValue("@st", row["Status"]);
-                            cmd.Parameters.AddWithValue("@dt", row["BookingDate"]);
-                            cmd.ExecuteNonQuery();
-                        }
-                        new SqlCommand("SET IDENTITY_INSERT Bookings OFF", conn, trans).ExecuteNonQuery();
-
-                        // 6. Re-insert Details and Ratings
-                        foreach (DataRow row in dtDetails.Rows)
-                        {
-                            int oldId = (int)row["BookingId"];
-                            int newId = bookingMap.ContainsKey(oldId) ? bookingMap[oldId] : oldId;
-                            var cmd = new SqlCommand("INSERT INTO BookingDetails (BookingId, SeatNumber) VALUES (@bid, @seat)", conn, trans);
-                            cmd.Parameters.AddWithValue("@bid", newId);
-                            cmd.Parameters.AddWithValue("@seat", row["SeatNumber"]);
-                            cmd.ExecuteNonQuery();
-                        }
-                        foreach (DataRow row in dtRatings.Rows)
-                        {
-                            int oldUserId = (int)row["UserId"];
-                            int newUserId = userMap.ContainsKey(oldUserId) ? userMap[oldUserId] : oldUserId;
-                            var cmd = new SqlCommand("INSERT INTO Ratings (MovieId, UserId, Score, Comment, CreatedAt) VALUES (@mid, @uid, @sc, @cm, @dt)", conn, trans);
-                            cmd.Parameters.AddWithValue("@mid", row["MovieId"]);
-                            cmd.Parameters.AddWithValue("@uid", newUserId);
-                            cmd.Parameters.AddWithValue("@sc", row["Score"]);
-                            cmd.Parameters.AddWithValue("@cm", row["Comment"]);
-                            cmd.Parameters.AddWithValue("@dt", row["CreatedAt"]);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        trans.Commit();
-                        
-                        // Reseed after commit
-                        DBHelper.ExecuteNonQuery("DBCC CHECKIDENT ('Users', RESEED, " + (nextUserId - 1) + ")");
-                        DBHelper.ExecuteNonQuery("DBCC CHECKIDENT ('Bookings', RESEED, " + (nextBookingId - 1) + ")");
-                    }
-                    catch (Exception ex)
-                    {
-                        trans.Rollback();
-                        System.Diagnostics.Debug.WriteLine("REBASE FAILED: " + ex.Message);
-                    }
+                    string sql = $"DECLARE @maxid INT = (SELECT ISNULL(MAX({table.TrimEnd('s')}Id), 0) FROM {table}); DBCC CHECKIDENT ('{table}', RESEED, @maxid);";
+                    DBHelper.ExecuteNonQuery(sql);
                 }
+                catch { }
             }
         }
     }

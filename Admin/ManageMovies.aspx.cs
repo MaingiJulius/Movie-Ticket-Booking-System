@@ -2,6 +2,7 @@ using System;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using MovieTicketBooking.DataAccess;
+using System.Data;
 
 namespace MovieTicketBooking
 {
@@ -25,42 +26,49 @@ namespace MovieTicketBooking
 
         private void LoadMovies()
         {
-            gvMovies.DataSource = _movieRepo.GetAllMovies();
+            gvMovies.DataSource = _movieRepo.GetAllMoviesForAdmin();
             gvMovies.DataBind();
         }
 
         protected void btnSave_Click(object sender, EventArgs e)
         {
-            string title = txtTitle.Text;
-            string genre = txtGenre.Text;
-            int dur = 0;
-            int.TryParse(txtDuration.Text, out dur);
-            string lang = txtLanguage.Text;
-            string rating = txtRating.Text;
-            string desc = txtDesc.Text;
-            
-            string poster = "default.jpg";
-            if (fuPosterUrl.HasFile)
+            try
             {
-                string folderPath = Server.MapPath("~/Content/Images/");
-                if (!System.IO.Directory.Exists(folderPath))
-                    System.IO.Directory.CreateDirectory(folderPath);
+                string title = txtTitle.Text;
+                string genre = txtGenre.Text;
+                int dur = 0;
+                int.TryParse(txtDuration.Text, out dur);
+                string lang = txtLanguage.Text;
+                string rating = ddlRating.SelectedValue;
+                string desc = txtDesc.Text;
+                
+                string poster = "default.jpg";
+                if (fuPosterUrl.HasFile)
+                {
+                    string folderPath = Server.MapPath("~/Content/Images/");
+                    if (!System.IO.Directory.Exists(folderPath))
+                        System.IO.Directory.CreateDirectory(folderPath);
 
-                string ext = System.IO.Path.GetExtension(fuPosterUrl.FileName);
-                poster = Guid.NewGuid().ToString() + ext;
-                fuPosterUrl.SaveAs(folderPath + poster);
+                    string ext = System.IO.Path.GetExtension(fuPosterUrl.FileName);
+                    poster = Guid.NewGuid().ToString() + ext;
+                    fuPosterUrl.SaveAs(folderPath + poster);
+                }
+
+                if (_adminRepo.AddMovie(title, desc, genre, dur, lang, rating, poster))
+                {
+                    LoadMovies();
+                    // Clear fields
+                    txtTitle.Text = "";
+                    txtGenre.Text = "";
+                    txtDuration.Text = "";
+                    txtLanguage.Text = "";
+                    txtDesc.Text = "";
+                    ScriptManager.RegisterStartupScript(this, GetType(), "success", "alert('Movie added successfully!');", true);
+                }
             }
-
-            if (_adminRepo.AddMovie(title, desc, genre, dur, lang, rating, poster))
+            catch (Exception ex)
             {
-                LoadMovies();
-                // Clear fields
-                txtTitle.Text = "";
-                txtGenre.Text = "";
-                txtDuration.Text = "";
-                txtLanguage.Text = "";
-                txtRating.Text = "";
-                txtDesc.Text = "";
+                ScriptManager.RegisterStartupScript(this, GetType(), "error", "alert('Error adding movie: " + ex.Message.Replace("'", "\\'") + "');", true);
             }
         }
 
@@ -68,78 +76,121 @@ namespace MovieTicketBooking
         {
             if (e.CommandName == "DeleteMovie")
             {
+                try
+                {
+                    int id = Convert.ToInt32(e.CommandArgument);
+                    if (_adminRepo.DeleteMovie(id))
+                    {
+                        LoadMovies();
+                        ScriptManager.RegisterStartupScript(this, GetType(), "success", "alert('Movie and all related data deleted permanently.');", true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ScriptManager.RegisterStartupScript(this, GetType(), "error", "alert('Error deleting movie: " + ex.Message.Replace("'", "\\'") + "');", true);
+                }
+            }
+            else if (e.CommandName == "ModifyMovie")
+            {
                 int id = Convert.ToInt32(e.CommandArgument);
-                if (_adminRepo.DeleteMovie(id))
+                LoadMovieForEdit(id);
+            }
+        }
+
+        private void LoadMovieForEdit(int movieId)
+        {
+            try
+            {
+                DataTable dt = _movieRepo.GetMovieDetails(movieId);
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow row = dt.Rows[0];
+                    hfEditMovieId.Value = movieId.ToString();
+                    txtEditTitle.Text = row["Title"].ToString();
+                    txtEditGenre.Text = row["Genre"].ToString();
+                    txtEditDuration.Text = row["Duration"].ToString();
+                    txtEditLanguage.Text = row["Language"].ToString();
+                    txtEditDesc.Text = row["Description"].ToString();
+                    
+                    string rating = row["Rating"].ToString();
+                    if (ddlEditRating.Items.FindByValue(rating) != null)
+                    {
+                        ddlEditRating.SelectedValue = rating;
+                    }
+                    
+                    ddlEditStatus.SelectedValue = row["IsActive"].ToString().ToLower();
+                    
+                    string posterUrl = row["PosterUrl"].ToString();
+                    hfCurrentEditPoster.Value = posterUrl;
+                    lblCurrentPosterName.Text = posterUrl;
+                    imgEditPosterCurrent.ImageUrl = posterUrl.StartsWith("http") ? posterUrl : "~/Content/Images/" + posterUrl;
+
+                    // Trigger JS to show modal
+                    hfShowEditModal.Value = "true";
+                    
+                    // Also trigger JS to update rating icon
+                    ScriptManager.RegisterStartupScript(this, GetType(), "UpdateRatingIcon", 
+                        "updateRatingSign(document.getElementById('" + ddlEditRating.ClientID + "'), 'editRatingPreview');", true);
+                }
+            }
+            catch (Exception ex)
+            {
+                ScriptManager.RegisterStartupScript(this, GetType(), "error", "alert('Error loading movie for edit: " + ex.Message.Replace("'", "\\'") + "');", true);
+            }
+        }
+
+        protected void btnUpdateMovie_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                int movieId = int.Parse(hfEditMovieId.Value);
+                string title = txtEditTitle.Text;
+                string genre = txtEditGenre.Text;
+                int dur = 0;
+                int.TryParse(txtEditDuration.Text, out dur);
+                string lang = txtEditLanguage.Text;
+                string rating = ddlEditRating.SelectedValue;
+                string desc = txtEditDesc.Text;
+                bool isActive = bool.Parse(ddlEditStatus.SelectedValue);
+                
+                string poster = hfCurrentEditPoster.Value;
+
+                if (chkRemovePoster.Checked)
+                {
+                    poster = "default.jpg";
+                }
+                else if (!string.IsNullOrEmpty(hfEditPosterBase64.Value))
+                {
+                    string base64Data = hfEditPosterBase64.Value;
+                    int dataIndex = base64Data.IndexOf("base64,") + 7;
+                    if (dataIndex >= 7)
+                    {
+                        string base64String = base64Data.Substring(dataIndex);
+                        byte[] imageBytes = Convert.FromBase64String(base64String);
+
+                        string folderPath = Server.MapPath("~/Content/Images/");
+                        if (!System.IO.Directory.Exists(folderPath))
+                            System.IO.Directory.CreateDirectory(folderPath);
+
+                        poster = Guid.NewGuid().ToString() + ".jpg";
+                        System.IO.File.WriteAllBytes(folderPath + poster, imageBytes);
+                    }
+                }
+
+                if (_adminRepo.UpdateMovie(movieId, title, desc, genre, dur, lang, rating, poster, isActive))
                 {
                     LoadMovies();
+                    hfShowEditModal.Value = "false";
+                    ScriptManager.RegisterStartupScript(this, GetType(), "success", "alert('Movie updated successfully!');", true);
                 }
-            }
-        }
-
-        protected void gvMovies_RowEditing(object sender, GridViewEditEventArgs e)
-        {
-            gvMovies.EditIndex = e.NewEditIndex;
-            LoadMovies();
-        }
-
-        protected void gvMovies_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
-        {
-            gvMovies.EditIndex = -1;
-            LoadMovies();
-        }
-
-        protected void gvMovies_RowUpdating(object sender, GridViewUpdateEventArgs e)
-        {
-            int movieId = Convert.ToInt32(gvMovies.DataKeys[e.RowIndex].Value);
-            GridViewRow row = gvMovies.Rows[e.RowIndex];
-
-            // Corrected indices based on new Columns collection:
-            // 0=ID, 1=Title, 2=Genre, 3=Trailer (Template), 4=Poster (Template)
-            string title = (row.Cells[1].Controls[0] as TextBox).Text;
-            string genre = (row.Cells[2].Controls[0] as TextBox).Text;
-            FileUpload fuEdit = (FileUpload)row.FindControl("fuEditPoster");
-            HiddenField hfEdit = (HiddenField)row.FindControl("hfCurrentPoster");
-            HiddenField hfNewBase64 = (HiddenField)row.FindControl("hfNewPosterBase64");
-            
-            string poster = hfEdit.Value;
-
-            if (hfNewBase64 != null && !string.IsNullOrEmpty(hfNewBase64.Value))
-            {
-                string base64Data = hfNewBase64.Value;
-                int dataIndex = base64Data.IndexOf("base64,") + 7;
-                if (dataIndex >= 7)
+                else
                 {
-                    string base64String = base64Data.Substring(dataIndex);
-                    byte[] imageBytes = Convert.FromBase64String(base64String);
-
-                    string folderPath = Server.MapPath("~/Content/Images/");
-                    if (!System.IO.Directory.Exists(folderPath))
-                        System.IO.Directory.CreateDirectory(folderPath);
-
-                    poster = Guid.NewGuid().ToString() + ".jpg";
-                    System.IO.File.WriteAllBytes(folderPath + poster, imageBytes);
+                    ScriptManager.RegisterStartupScript(this, GetType(), "error", "alert('Error: Could not update movie in database.');", true);
                 }
             }
-            else if (fuEdit != null && fuEdit.HasFile)
+            catch (Exception ex)
             {
-                // Fallback for regular postback
-                string folderPath = Server.MapPath("~/Content/Images/");
-                if (!System.IO.Directory.Exists(folderPath))
-                    System.IO.Directory.CreateDirectory(folderPath);
-
-                string ext = System.IO.Path.GetExtension(fuEdit.FileName);
-                poster = Guid.NewGuid().ToString() + ext;
-                fuEdit.SaveAs(folderPath + poster);
-            }
-
-            // We don't have Language in the edit grid as per the markupBoundFields, we can add it if needed
-            // For now, let's keep it consistent with the markup
-            string lang = "English"; // Default or fetch from DB if needed
-
-            if (_adminRepo.UpdateMovie(movieId, title, genre, lang, poster))
-            {
-                gvMovies.EditIndex = -1;
-                LoadMovies();
+                ScriptManager.RegisterStartupScript(this, GetType(), "error", "alert('System Error: " + ex.Message.Replace("'", "\\'") + "');", true);
             }
         }
 
