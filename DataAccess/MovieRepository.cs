@@ -8,38 +8,38 @@ namespace MovieTicketBooking.DataAccess
     {
         public DataTable GetAllMovies()
         {
-            string query = @"SELECT *, 
-                             (SELECT TOP 1 (TheaterName + ' @ ' + FORMAT(StartTime, 'h:mm tt')) 
-                               FROM Showtimes 
-                               WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
-                               ORDER BY StartTime ASC) as NextShow
-                             FROM Movies M
-                             WHERE IsActive = 1 
-                             ORDER BY MovieId DESC";
+            string query = @"SELECT M.*, 
+                             (SELECT TOP 1 (TheaterName + ' @ ' + LTRIM(RIGHT(CONVERT(VARCHAR(20), StartTime, 100), 7))) 
+                               FROM Showtimes S WITH (NOLOCK)
+                               WHERE S.MovieId = M.MovieId AND S.StartTime > GETDATE() 
+                               ORDER BY S.StartTime ASC) as NextShow
+                             FROM Movies M WITH (NOLOCK)
+                             WHERE M.IsActive = 1 
+                             ORDER BY M.MovieId DESC";
             return DBHelper.ExecuteQuery(query);
         }
 
         public DataTable GetAllMoviesForAdmin()
         {
-            string query = @"SELECT *, 
-                             (SELECT TOP 1 (TheaterName + ' @ ' + FORMAT(StartTime, 'h:mm tt')) 
-                               FROM Showtimes 
-                               WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
-                               ORDER BY StartTime ASC) as NextShow
-                             FROM Movies M
-                             ORDER BY MovieId DESC";
+            string query = @"SELECT M.*, 
+                             (SELECT TOP 1 (TheaterName + ' @ ' + LTRIM(RIGHT(CONVERT(VARCHAR(20), StartTime, 100), 7))) 
+                               FROM Showtimes S WITH (NOLOCK)
+                               WHERE S.MovieId = M.MovieId AND S.StartTime > GETDATE() 
+                               ORDER BY S.StartTime ASC) as NextShow
+                             FROM Movies M WITH (NOLOCK)
+                             ORDER BY M.MovieId DESC";
             return DBHelper.ExecuteQuery(query);
         }
 
         public DataTable SearchMovies(string title, string genre)
         {
-            string query = @"SELECT *, 
-                             (SELECT TOP 1 (TheaterName + ' @ ' + FORMAT(StartTime, 'h:mm tt')) 
-                               FROM Showtimes 
-                               WHERE MovieId = M.MovieId AND StartTime > GETDATE() 
-                               ORDER BY StartTime ASC) as NextShow
-                             FROM Movies M
-                             WHERE IsActive = 1";
+            string query = @"SELECT M.*, 
+                             (SELECT TOP 1 (TheaterName + ' @ ' + LTRIM(RIGHT(CONVERT(VARCHAR(20), StartTime, 100), 7))) 
+                               FROM Showtimes S WITH (NOLOCK)
+                               WHERE S.MovieId = M.MovieId AND S.StartTime > GETDATE() 
+                               ORDER BY S.StartTime ASC) as NextShow
+                             FROM Movies M WITH (NOLOCK)
+                             WHERE M.IsActive = 1";
             System.Collections.Generic.List<SqlParameter> paras = new System.Collections.Generic.List<SqlParameter>();
 
             if (!string.IsNullOrEmpty(title))
@@ -70,7 +70,8 @@ namespace MovieTicketBooking.DataAccess
             string query = @"SELECT S.*, M.Title 
                              FROM Showtimes S 
                              INNER JOIN Movies M ON S.MovieId = M.MovieId 
-                             WHERE S.MovieId = @id AND S.StartTime > GETDATE()";
+                             WHERE S.MovieId = @id AND CAST(S.StartTime AS DATE) >= CAST(GETDATE() AS DATE)
+                             ORDER BY S.StartTime ASC";
             SqlParameter[] paras = { new SqlParameter("@id", movieId) };
             return DBHelper.ExecuteQuery(query, paras);
         }
@@ -139,11 +140,15 @@ namespace MovieTicketBooking.DataAccess
         }
         public DataTable GetTopRatedMovies(int count)
         {
-            string query = $@"SELECT TOP {count} m.*, 
-                              (SELECT ISNULL(AVG(CAST(Score as float)), 0) FROM Ratings WHERE MovieId = m.MovieId) as AvgScore
-                              FROM Movies m
+            string query = $@"SELECT TOP {count} m.*, ISNULL(r.AvgScore, 0) as AvgScore
+                              FROM Movies m WITH (NOLOCK)
+                              LEFT JOIN (
+                                  SELECT MovieId, AVG(CAST(Score as float)) as AvgScore
+                                  FROM Ratings WITH (NOLOCK)
+                                  GROUP BY MovieId
+                              ) r ON m.MovieId = r.MovieId
                               WHERE m.IsActive = 1
-                              ORDER BY AvgScore DESC, m.MovieId DESC";
+                              ORDER BY r.AvgScore DESC, m.MovieId DESC";
             return DBHelper.ExecuteQuery(query);
         }
     }

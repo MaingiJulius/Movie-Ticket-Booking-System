@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Web.UI;
@@ -16,18 +16,18 @@ namespace MovieTicketBooking
         {
             if (Session["UserId"] == null) Response.Redirect("Login.aspx");
 
-            if (!IsPostBack)
+            if (Request.QueryString["showId"] != null)
             {
-                if (Request.QueryString["showId"] != null)
+                int showId = Convert.ToInt32(Request.QueryString["showId"]);
+                if (!IsPostBack)
                 {
-                    int showId = Convert.ToInt32(Request.QueryString["showId"]);
                     LoadShowDetails(showId);
-                    LoadSeats(showId);
                 }
-                else
-                {
-                    Response.Redirect("Movies.aspx");
-                }
+                LoadSeats(showId); // Always call this to re-apply classes
+            }
+            else
+            {
+                Response.Redirect("Movies.aspx");
             }
         }
 
@@ -49,27 +49,48 @@ namespace MovieTicketBooking
         private void LoadSeats(int showId)
         {
             DataTable occupied = _bookRepo.GetOccupiedSeats(showId);
-            List<string> occupiedList = new List<string>();
+            HashSet<string> occupiedList = new HashSet<string>();
             foreach (DataRow r in occupied.Rows) occupiedList.Add(r["SeatNumber"].ToString());
 
-            char[] rows = { 'A', 'B', 'C', 'D' };
-            for (int i = 0; i < 4; i++)
+            if (!IsPostBack)
             {
-                for (int j = 1; j <= 5; j++)
+                cblSeats.Items.Clear();
+                char[] rows = { 'A', 'B', 'C', 'D' };
+                for (int i = 0; i < 4; i++)
                 {
-                    string seat = rows[i].ToString() + j.ToString();
-                    ListItem item = new ListItem(seat, seat);
-                    if (occupiedList.Contains(seat))
+                    for (int j = 1; j <= 5; j++)
                     {
-                        item.Enabled = false;
-                        item.Attributes["class"] = "seat occupied";
+                        string seat = rows[i].ToString() + j.ToString();
+                        ListItem item = new ListItem(seat, seat);
+                        ApplySeatClass(item, occupiedList);
+                        cblSeats.Items.Add(item);
                     }
-                    else
-                    {
-                        item.Attributes["class"] = "seat";
-                    }
-                    cblSeats.Items.Add(item);
                 }
+            }
+            else
+            {
+                // Re-apply classes to existing items on postback
+                foreach (ListItem item in cblSeats.Items)
+                {
+                    ApplySeatClass(item, occupiedList);
+                }
+            }
+        }
+
+        private void ApplySeatClass(ListItem item, HashSet<string> occupiedList)
+        {
+            if (occupiedList.Contains(item.Value))
+            {
+                item.Enabled = false;
+                item.Attributes["class"] = "occupied"; 
+            }
+            else if (item.Selected)
+            {
+                item.Attributes["class"] = "selected";
+            }
+            else
+            {
+                item.Attributes["class"] = "available";
             }
         }
 

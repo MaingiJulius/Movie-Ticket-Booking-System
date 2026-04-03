@@ -21,6 +21,7 @@ namespace MovieTicketBooking.DataAccess
             {
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
+                    cmd.CommandTimeout = 120; // 2 minutes timeout
                     if (parameters != null) cmd.Parameters.AddRange(parameters);
                     using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                     {
@@ -39,6 +40,7 @@ namespace MovieTicketBooking.DataAccess
             {
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
+                    cmd.CommandTimeout = 120; // 2 minutes timeout
                     if (parameters != null) cmd.Parameters.AddRange(parameters);
                     conn.Open();
                     return cmd.ExecuteNonQuery();
@@ -53,6 +55,7 @@ namespace MovieTicketBooking.DataAccess
             {
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
+                    cmd.CommandTimeout = 120; // 2 minutes timeout
                     if (parameters != null) cmd.Parameters.AddRange(parameters);
                     conn.Open();
                     return cmd.ExecuteScalar();
